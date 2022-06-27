@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -46,8 +47,8 @@ func Table(name string) *goloquent.Table {
 }
 
 // Migrate :
-func Migrate(model ...interface{}) error {
-	return defaultDB.Migrate(model...)
+func Migrate(ctx context.Context, model ...interface{}) error {
+	return defaultDB.Migrate(ctx, model...)
 }
 
 // Omit :
@@ -56,54 +57,54 @@ func Omit(fields ...string) goloquent.Replacer {
 }
 
 // Create :
-func Create(model interface{}, parentKey ...*datastore.Key) error {
+func Create(ctx context.Context, model interface{}, parentKey ...*datastore.Key) error {
 	if parentKey == nil {
-		return defaultDB.Create(model)
+		return defaultDB.Create(ctx, model)
 	}
-	return defaultDB.Create(model, parentKey...)
+	return defaultDB.Create(ctx, model, parentKey...)
 }
 
 // Upsert :
-func Upsert(model interface{}, parentKey ...*datastore.Key) error {
+func Upsert(ctx context.Context, model interface{}, parentKey ...*datastore.Key) error {
 	if parentKey == nil {
-		return defaultDB.Upsert(model)
+		return defaultDB.Upsert(ctx, model)
 	}
-	return defaultDB.Upsert(model, parentKey...)
+	return defaultDB.Upsert(ctx, model, parentKey...)
 }
 
 // Delete :
-func Delete(model interface{}) error {
-	return defaultDB.Delete(model)
+func Delete(ctx context.Context, model interface{}) error {
+	return defaultDB.Delete(ctx, model)
 }
 
 // Destroy :
-func Destroy(model interface{}) error {
-	return defaultDB.Destroy(model)
+func Destroy(ctx context.Context, model interface{}) error {
+	return defaultDB.Destroy(ctx, model)
 }
 
 // Save :
-func Save(model interface{}) error {
-	return defaultDB.Save(model)
+func Save(ctx context.Context, model interface{}) error {
+	return defaultDB.Save(ctx, model)
 }
 
 // Find :
-func Find(key *datastore.Key, model interface{}) error {
-	return defaultDB.Find(key, model)
+func Find(ctx context.Context, key *datastore.Key, model interface{}) error {
+	return defaultDB.Find(ctx, key, model)
 }
 
 // First :
-func First(model interface{}) error {
-	return defaultDB.First(model)
+func First(ctx context.Context, model interface{}) error {
+	return defaultDB.First(ctx, model)
 }
 
 // Get :
-func Get(model interface{}) error {
-	return defaultDB.Get(model)
+func Get(ctx context.Context, model interface{}) error {
+	return defaultDB.Get(ctx, model)
 }
 
 // Paginate :
-func Paginate(p *goloquent.Pagination, model interface{}) error {
-	return defaultDB.Paginate(p, model)
+func Paginate(ctx context.Context, p *goloquent.Pagination, model interface{}) error {
+	return defaultDB.Paginate(ctx, p, model)
 }
 
 // NewQuery :
@@ -192,6 +193,6 @@ func RunInTransaction(cb goloquent.TransactionHandler) error {
 }
 
 // Truncate :
-func Truncate(model ...interface{}) error {
-	return defaultDB.Truncate(model...)
+func Truncate(ctx context.Context, model ...interface{}) error {
+	return defaultDB.Truncate(ctx, model...)
 }

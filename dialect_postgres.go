@@ -2,6 +2,7 @@ package goloquent
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -249,7 +250,7 @@ func (p postgres) GetSchema(c Column) []Schema {
 		if t == typeOfPtrKey {
 			if f.name == keyFieldName {
 				return []Schema{
-					Schema{pkColumn, fmt.Sprintf("varchar(%d)", pkLen), OmitDefault(nil), false, false, false, latin1CharSet},
+					{pkColumn, fmt.Sprintf("varchar(%d)", pkLen), OmitDefault(nil), false, false, false, latin1CharSet},
 				}
 			}
 			sc.IsIndexed = true
@@ -399,7 +400,7 @@ func (p *postgres) ToString(it interface{}) string {
 	return v
 }
 
-func (p *postgres) CreateTable(table string, columns []Column) error {
+func (p *postgres) CreateTable(ctx context.Context, table string, columns []Column) error {
 	idxs := make([]string, 0, len(columns))
 	conn := p.db.sqlCommon.(*sql.DB)
 	tx, err := conn.Begin()
@@ -440,7 +441,7 @@ func (p *postgres) CreateTable(table string, columns []Column) error {
 	return tx.Commit()
 }
 
-func (p *postgres) AlterTable(table string, columns []Column, unsafe bool) error {
+func (p *postgres) AlterTable(ctx context.Context, table string, columns []Column, unsafe bool) error {
 	cols := newDictionary(p.GetColumns(table))
 	idxs := newDictionary(p.GetIndexes(table))
 	idxs.delete(fmt.Sprintf("%s_pkey", table))
@@ -495,7 +496,7 @@ func (p *postgres) AlterTable(table string, columns []Column, unsafe bool) error
 	buf.WriteString(";")
 
 	log.Println(idxs.keys())
-	return p.db.execStmt(&stmt{
+	return p.db.execStmt(ctx, &stmt{
 		statement: buf,
 	})
 
@@ -516,7 +517,7 @@ func (p *postgres) AlterTable(table string, columns []Column, unsafe bool) error
 	// }
 }
 
-func (p *postgres) ReplaceInto(src, dst string) error {
+func (p *postgres) ReplaceInto(ctx context.Context, src, dst string) error {
 	cols := p.GetColumns(src)
 	pk := p.Quote(pkColumn)
 	src, dst = p.GetTable(src), p.GetTable(dst)
@@ -539,7 +540,7 @@ func (p *postgres) ReplaceInto(src, dst string) error {
 	buf.WriteString("WHERE NOT EXISTS ")
 	buf.WriteString("(SELECT 1 FROM patch WHERE " + pk + " = " + src + "." + pk + ")")
 	buf.WriteString(";")
-	return p.db.execStmt(&stmt{
+	return p.db.execStmt(ctx, &stmt{
 		statement: buf,
 	})
 }

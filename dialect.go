@@ -1,6 +1,7 @@
 package goloquent
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"reflect"
@@ -24,11 +25,11 @@ type Dialect interface {
 	HasIndex(tb, idx string) bool
 	GetColumns(tb string) (cols []string)
 	GetIndexes(tb string) (idxs []string)
-	CreateTable(tb string, cols []Column) error
-	AlterTable(tb string, cols []Column, unsafe bool) error
+	CreateTable(ctx context.Context, tb string, cols []Column) error
+	AlterTable(ctx context.Context, tb string, cols []Column, unsafe bool) error
 	OnConflictUpdate(tb string, cols []string) string
 	UpdateWithLimit() bool
-	ReplaceInto(src, dst string) error
+	ReplaceInto(ctx context.Context, src, dst string) error
 }
 
 var (

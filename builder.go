@@ -2,6 +2,7 @@ package goloquent
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha1"
 	"database/sql"
 	"encoding/base64"
@@ -42,7 +43,7 @@ func newBuilder(query *Query) *builder {
 	}
 }
 
-func (b *builder) addIndex(fields []string, idx index) error {
+func (b *builder) addIndex(ctx context.Context, fields []string, idx index) error {
 	table := b.query.table
 	buf := new(bytes.Buffer)
 	buf.WriteString("CREATE")
@@ -60,15 +61,15 @@ func (b *builder) addIndex(fields []string, idx index) error {
 		b.db.dialect.Quote(idxName),
 		b.db.dialect.GetTable(table),
 		b.db.dialect.Quote(strings.Join(fields, ","))))
-	return b.db.client.execStmt(&stmt{
+	return b.db.client.execStmt(ctx, &stmt{
 		statement: buf,
 	})
 }
 
-func (b *builder) dropTableIfExists(table string) error {
+func (b *builder) dropTableIfExists(ctx context.Context, table string) error {
 	buf := new(bytes.Buffer)
 	buf.WriteString(fmt.Sprintf("DROP TABLE IF EXISTS %s;", b.db.dialect.GetTable(table)))
-	return b.db.client.execStmt(&stmt{
+	return b.db.client.execStmt(ctx, &stmt{
 		statement: buf,
 	})
 }
@@ -358,29 +359,29 @@ func (b *builder) buildStmt(query scope, args ...interface{}) (*stmt, error) {
 	}, nil
 }
 
-func (b *builder) createTable(e *entity) error {
-	return b.db.dialect.CreateTable(e.Name(), e.columns)
+func (b *builder) createTable(ctx context.Context, e *entity) error {
+	return b.db.dialect.CreateTable(ctx, e.Name(), e.columns)
 }
 
-func (b *builder) alterTable(e *entity) error {
-	return b.db.dialect.AlterTable(e.Name(), e.columns, false)
+func (b *builder) alterTable(ctx context.Context, e *entity) error {
+	return b.db.dialect.AlterTable(ctx, e.Name(), e.columns, false)
 }
 
-func (b *builder) migrate(model interface{}) error {
+func (b *builder) migrate(ctx context.Context, model interface{}) error {
 	e, err := newEntity(model)
 	if err != nil {
 		return err
 	}
 	e.setName(b.query.table)
 	if b.db.dialect.HasTable(e.Name()) {
-		return b.alterTable(e)
+		return b.alterTable(ctx, e)
 	}
-	return b.createTable(e)
+	return b.createTable(ctx, e)
 }
 
-func (b *builder) migrateMultiple(models []interface{}) error {
+func (b *builder) migrateMultiple(ctx context.Context, models []interface{}) error {
 	for _, m := range models {
-		if err := b.migrate(m); err != nil {
+		if err := b.migrate(ctx, m); err != nil {
 			return err
 		}
 	}
@@ -418,8 +419,8 @@ func (b *builder) getCommand(e *entity) (*stmt, error) {
 	}, nil
 }
 
-func (b *builder) run(table string, cmd *stmt) (*Iterator, error) {
-	var rows, err = b.db.client.execQuery(cmd)
+func (b *builder) run(ctx context.Context, table string, cmd *stmt) (*Iterator, error) {
+	var rows, err = b.db.client.execQuery(ctx, cmd)
 	if err != nil {
 		return nil, fmt.Errorf("goloquent: %v", err)
 	}
@@ -457,7 +458,7 @@ func (b *builder) run(table string, cmd *stmt) (*Iterator, error) {
 	return &it, nil
 }
 
-func (b *builder) get(model interface{}, mustExist bool) error {
+func (b *builder) get(ctx context.Context, model interface{}, mustExist bool) error {
 	e, err := newEntity(model)
 	if err != nil {
 		return err
@@ -468,7 +469,7 @@ func (b *builder) get(model interface{}, mustExist bool) error {
 		return err
 	}
 
-	it, err := b.run(e.Name(), cmd)
+	it, err := b.run(ctx, e.Name(), cmd)
 	if err != nil {
 		return err
 	}
@@ -479,7 +480,7 @@ func (b *builder) get(model interface{}, mustExist bool) error {
 	}
 
 	if first != nil {
-		err = it.Scan(model)
+		err = it.Scan(ctx, model)
 		if err != nil {
 			return err
 		}
@@ -491,7 +492,7 @@ func (b *builder) get(model interface{}, mustExist bool) error {
 	return nil
 }
 
-func (b *builder) getMulti(model interface{}) error {
+func (b *builder) getMulti(ctx context.Context, model interface{}) error {
 	e, err := newEntity(model)
 	if err != nil {
 		return err
@@ -502,7 +503,7 @@ func (b *builder) getMulti(model interface{}) error {
 		return err
 	}
 
-	it, err := b.run(e.Name(), cmd)
+	it, err := b.run(ctx, e.Name(), cmd)
 	if err != nil {
 		return err
 	}
@@ -512,7 +513,7 @@ func (b *builder) getMulti(model interface{}) error {
 	isPtr, t := checkMultiPtr(v)
 	for it.Next() {
 		vi := reflect.New(t)
-		_, err = it.scan(vi.Interface())
+		_, err = it.scan(ctx, vi.Interface())
 		if err != nil {
 			return err
 		}
@@ -540,7 +541,7 @@ func baseToInterface(it interface{}) interface{} {
 	return v
 }
 
-func (b *builder) paginate(p *Pagination, model interface{}) error {
+func (b *builder) paginate(ctx context.Context, p *Pagination, model interface{}) error {
 	e, err := newEntity(model)
 	if err != nil {
 		return err
@@ -600,7 +601,7 @@ func (b *builder) paginate(p *Pagination, model interface{}) error {
 		if err := b.db.Table(e.Name()).
 			WhereEqual(keyFieldName, c.Key).
 			Select(projection...).
-			Limit(1).Scan(values...); err != nil {
+			Limit(1).Scan(ctx, values...); err != nil {
 			return ErrInvalidCursor
 		}
 		arg := make([]interface{}, 0, len(orders))
@@ -637,7 +638,7 @@ func (b *builder) paginate(p *Pagination, model interface{}) error {
 		cmds = &stmt{statement: buf, arguments: args}
 	}
 
-	it, err := b.run(e.Name(), cmds)
+	it, err := b.run(ctx, e.Name(), cmds)
 	if err != nil {
 		return err
 	}
@@ -651,7 +652,7 @@ func (b *builder) paginate(p *Pagination, model interface{}) error {
 			continue
 		}
 		vi := reflect.New(t)
-		_, err = it.scan(vi.Interface())
+		_, err = it.scan(ctx, vi.Interface())
 		if err != nil {
 			return err
 		}
@@ -675,7 +676,7 @@ func (b *builder) paginate(p *Pagination, model interface{}) error {
 	return nil
 }
 
-func (b *builder) replaceInto(table string) error {
+func (b *builder) replaceInto(ctx context.Context, table string) error {
 	buf, args := new(bytes.Buffer), make([]interface{}, 0)
 	buf.WriteString("REPLACE INTO ")
 	buf.WriteString(b.db.dialect.GetTable(table))
@@ -696,13 +697,13 @@ func (b *builder) replaceInto(table string) error {
 	args = append(args, ss.arguments...)
 	buf.WriteString(b.buildLimitOffset(b.query).string())
 	buf.WriteString(";")
-	return b.db.client.execStmt(&stmt{
+	return b.db.client.execStmt(ctx, &stmt{
 		statement: buf,
 		arguments: args,
 	})
 }
 
-func (b *builder) insertInto(table string) error {
+func (b *builder) insertInto(ctx context.Context, table string) error {
 	buf, args := new(bytes.Buffer), make([]interface{}, 0)
 	buf.WriteString("INSERT INTO ")
 	buf.WriteString(b.db.dialect.GetTable(table))
@@ -719,13 +720,13 @@ func (b *builder) insertInto(table string) error {
 		args = append(args, cmd.arguments...)
 	}
 	buf.WriteString(";")
-	return b.db.client.execStmt(&stmt{
+	return b.db.client.execStmt(ctx, &stmt{
 		statement: buf,
 		arguments: args,
 	})
 }
 
-func (b *builder) putStmt(parentKey []*datastore.Key, e *entity) (*stmt, error) {
+func (b *builder) putStmt(ctx context.Context, parentKey []*datastore.Key, e *entity) (*stmt, error) {
 	v := e.slice.Elem()
 
 	isInline := (parentKey == nil && len(parentKey) == 0)
@@ -766,7 +767,7 @@ func (b *builder) putStmt(parentKey []*datastore.Key, e *entity) (*stmt, error) 
 		fv.Set(reflect.ValueOf(pk))
 
 		if x, isOk := vi.Interface().(Saver); isOk {
-			if err := x.Save(); err != nil {
+			if err := x.Save(ctx); err != nil {
 				return nil, err
 			}
 		}
@@ -805,7 +806,7 @@ func (b *builder) putStmt(parentKey []*datastore.Key, e *entity) (*stmt, error) 
 	}, nil
 }
 
-func (b *builder) put(model interface{}, parentKey []*datastore.Key) error {
+func (b *builder) put(ctx context.Context, model interface{}, parentKey []*datastore.Key) error {
 	e, err := newEntity(model)
 	if err != nil {
 		return err
@@ -814,14 +815,14 @@ func (b *builder) put(model interface{}, parentKey []*datastore.Key) error {
 	if e.slice.Elem().Len() <= 0 {
 		return nil
 	}
-	cmd, err := b.putStmt(parentKey, e)
+	cmd, err := b.putStmt(ctx, parentKey, e)
 	if err != nil {
 		return err
 	}
-	return b.db.client.execStmt(cmd)
+	return b.db.client.execStmt(ctx, cmd)
 }
 
-func (b *builder) upsert(model interface{}, parentKey []*datastore.Key) error {
+func (b *builder) upsert(ctx context.Context, model interface{}, parentKey []*datastore.Key) error {
 	e, err := newEntity(model)
 	if err != nil {
 		return err
@@ -830,7 +831,7 @@ func (b *builder) upsert(model interface{}, parentKey []*datastore.Key) error {
 	if e.slice.Elem().Len() <= 0 {
 		return nil
 	}
-	cmd, err := b.putStmt(parentKey, e)
+	cmd, err := b.putStmt(ctx, parentKey, e)
 	if err != nil {
 		return err
 	}
@@ -851,10 +852,10 @@ func (b *builder) upsert(model interface{}, parentKey []*datastore.Key) error {
 	}
 	buf.WriteString(";")
 	cmd.statement = buf
-	return b.db.client.execStmt(cmd)
+	return b.db.client.execStmt(ctx, cmd)
 }
 
-func (b *builder) saveMutation(model interface{}) (*stmt, error) {
+func (b *builder) saveMutation(ctx context.Context, model interface{}) (*stmt, error) {
 	v := reflect.Indirect(reflect.ValueOf(model))
 	if v.Len() <= 0 {
 		return new(stmt), nil
@@ -869,7 +870,7 @@ func (b *builder) saveMutation(model interface{}) (*stmt, error) {
 	buf.WriteString(fmt.Sprintf("UPDATE %s SET ", b.db.dialect.GetTable(e.Name())))
 	f := v.Index(0)
 	if x, isOk := f.Interface().(Saver); isOk {
-		if err := x.Save(); err != nil {
+		if err := x.Save(ctx); err != nil {
 			return nil, err
 		}
 	}
@@ -911,7 +912,7 @@ func (b *builder) saveMutation(model interface{}) (*stmt, error) {
 	}, nil
 }
 
-func (b *builder) save(model interface{}) error {
+func (b *builder) save(ctx context.Context, model interface{}) error {
 	v := reflect.ValueOf(model)
 	if !v.IsValid() {
 		return errors.New("goloquent: invalid entity to save")
@@ -920,11 +921,11 @@ func (b *builder) save(model interface{}) error {
 	vi.Index(0).Set(v)
 	vv := reflect.New(vi.Type())
 	vv.Elem().Set(vi)
-	cmd, err := b.saveMutation(vv.Interface())
+	cmd, err := b.saveMutation(ctx, vv.Interface())
 	if err != nil {
 		return err
 	}
-	if err := b.db.client.execStmt(cmd); err != nil {
+	if err := b.db.client.execStmt(ctx, cmd); err != nil {
 		return err
 	}
 	v.Elem().Set(vi.Index(0).Elem())
@@ -997,7 +998,7 @@ func (b *builder) updateWithStruct(model interface{}) (*stmt, error) {
 	}, nil
 }
 
-func (b *builder) updateMulti(v interface{}) error {
+func (b *builder) updateMulti(ctx context.Context, v interface{}) error {
 	vi := reflect.Indirect(reflect.ValueOf(v))
 	buf, args := new(bytes.Buffer), make([]interface{}, 0)
 	table := b.query.table
@@ -1045,7 +1046,7 @@ func (b *builder) updateMulti(v interface{}) error {
 		buf.WriteString(cmd.string())
 	}
 	buf.WriteString(";")
-	return b.db.client.execStmt(&stmt{
+	return b.db.client.execStmt(ctx, &stmt{
 		statement: buf,
 		arguments: append(args, cmd.arguments...),
 	})
@@ -1115,7 +1116,7 @@ func (b *builder) deleteStmt(e *entity, isSoftDelete bool) (*stmt, error) {
 	}, nil
 }
 
-func (b *builder) delete(model interface{}, isSoftDelete bool) error {
+func (b *builder) delete(ctx context.Context, model interface{}, isSoftDelete bool) error {
 	e, err := newEntity(model)
 	if err != nil {
 		return err
@@ -1125,10 +1126,10 @@ func (b *builder) delete(model interface{}, isSoftDelete bool) error {
 	if err != nil {
 		return err
 	}
-	return b.db.client.execStmt(cmd)
+	return b.db.client.execStmt(ctx, cmd)
 }
 
-func (b *builder) deleteByQuery() error {
+func (b *builder) deleteByQuery(ctx context.Context) error {
 	query := b.query
 	cmd, err := b.buildStmt(query)
 	if err != nil {
@@ -1139,14 +1140,14 @@ func (b *builder) deleteByQuery() error {
 	buf.WriteString(cmd.string())
 	buf.WriteString(";")
 	cmd.statement = buf
-	return b.db.client.execStmt(cmd)
+	return b.db.client.execStmt(ctx, cmd)
 }
 
-func (b *builder) truncate(tables ...string) error {
+func (b *builder) truncate(ctx context.Context, tables ...string) error {
 	for _, n := range tables {
 		buf := new(bytes.Buffer)
 		buf.WriteString(fmt.Sprintf("TRUNCATE TABLE %s;", b.db.dialect.GetTable(n)))
-		if err := b.db.client.execStmt(&stmt{
+		if err := b.db.client.execStmt(ctx, &stmt{
 			statement: buf,
 		}); err != nil {
 			return err
@@ -1155,7 +1156,7 @@ func (b *builder) truncate(tables ...string) error {
 	return nil
 }
 
-func (b *builder) scan(dest ...interface{}) error {
+func (b *builder) scan(ctx context.Context, dest ...interface{}) error {
 	query := b.query
 	table := query.table
 	buf := new(bytes.Buffer)
@@ -1167,7 +1168,7 @@ func (b *builder) scan(dest ...interface{}) error {
 	}
 	buf.WriteString(ss.string())
 	buf.WriteString(";")
-	if err := b.db.client.execQueryRow(&stmt{
+	if err := b.db.client.execQueryRow(ctx, &stmt{
 		statement: buf,
 		arguments: ss.arguments,
 	}).Scan(dest...); err != nil {

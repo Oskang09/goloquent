@@ -272,14 +272,14 @@ func (x *User) Save() (error) {
     import "github.com/si3nloong/goloquent/db"
     // Example 1
     users := new([]User)
-    if err := db.Limit(10).Get(users); err != nil {
+    if err := db.Limit(10).Get(ctx, users); err != nil {
         log.Println(err) // error while retrieving record
     }
 
     // Example 2
     users := new([]*User)
     if err := db.WhereEqual("Name", "Hello World").
-        Get(users); err != nil {
+        Get(ctx, users); err != nil {
         log.Println(err) // error while retrieving record
     }
 
@@ -288,7 +288,7 @@ func (x *User) Save() (error) {
     if err := db.Ancestor(parentKey).
         WhereEqual("Name", "myz").
         WhereEqual("Age", 22).
-        Get(users); err != nil {
+        Get(ctx, users); err != nil {
         log.Println(err) // error while retrieving record
     }
 ```
@@ -300,14 +300,14 @@ func (x *User) Save() (error) {
     // Ascending OrderBy
     users := new([]*User)
     if err := db.OrderBy("CreatedDateTime").
-        Get(users); err != nil {
+        Get(ctx, users); err != nil {
         log.Println(err) // error while retrieving record
     }
 
     // Descending OrderBy
     if err := db.Table("User").
         OrderBy("-CreatedDateTime").
-        Get(users); err != nil {
+        Get(ctx, users); err != nil {
         log.Println(err) // error while retrieving record
     }
 ```
@@ -501,7 +501,7 @@ func (x *User) Save() (error) {
     postCode := uint32(63000)
 	if err := db.NewQuery().
 		WhereJSONEqual("Address>PostCode", &postCode).
-		Get(users); err != nil {
+		Get(ctx, users); err != nil {
 		log.Println(err)
     }
 
@@ -509,7 +509,7 @@ func (x *User) Save() (error) {
     var timeZone *time.Time
 	if err := db.NewQuery().
 		WhereJSONNotEqual("Address>region.TimeZone", timeZone).
-		Get(users); err != nil {
+		Get(ctx, users); err != nil {
 		log.Println(err)
     }
 
@@ -517,28 +517,28 @@ func (x *User) Save() (error) {
     if err := db.NewQuery().
 		WhereJSONContainAny("Nicknames", []string{
             "Joe", "John", "Robert",
-        }).Get(users); err != nil {
+        }).Get(ctx, users); err != nil {
 		log.Println(err)
     }
 
     // JSON check type
     if err := db.NewQuery().
 		WhereJSONType("Address>region", "Object").
-        Get(users); err != nil {
+        Get(ctx, users); err != nil {
 		log.Println(err)
     }
 
     // JSON check is object type
     if err := db.NewQuery().
 		WhereJSONIsObject("Address>region").
-        Get(users); err != nil {
+        Get(ctx, users); err != nil {
 		log.Println(err)
     }
 
     // JSON check is array type
     if err := db.NewQuery().
 		WhereJSONIsArray("Address>region.keys").
-        Get(users); err != nil {
+        Get(ctx, users); err != nil {
 		log.Println(err)
     }
 ```

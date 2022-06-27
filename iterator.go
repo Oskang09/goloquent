@@ -2,6 +2,7 @@ package goloquent
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -13,12 +14,12 @@ import (
 
 // Loader :
 type Loader interface {
-	Load() error
+	Load(context.Context) error
 }
 
 // Saver :
 type Saver interface {
-	Save() error
+	Save(context.Context) error
 }
 
 // Iterator :
@@ -142,7 +143,7 @@ func (it *Iterator) Next() bool {
 	return true
 }
 
-func (it *Iterator) scan(src interface{}) (map[string]interface{}, error) {
+func (it *Iterator) scan(ctx context.Context, src interface{}) (map[string]interface{}, error) {
 	v := reflect.ValueOf(src)
 	if v.Type().Kind() != reflect.Ptr {
 		return nil, fmt.Errorf("goloquent: struct is not addressable")
@@ -175,7 +176,7 @@ func (it *Iterator) scan(src interface{}) (map[string]interface{}, error) {
 	}
 
 	if l, isOk := nv.Interface().(Loader); isOk {
-		if err := l.Load(); err != nil {
+		if err := l.Load(ctx); err != nil {
 			return nil, fmt.Errorf("goloquent: %v", err)
 		}
 	}
@@ -185,8 +186,8 @@ func (it *Iterator) scan(src interface{}) (map[string]interface{}, error) {
 }
 
 // Scan : set the model value
-func (it *Iterator) Scan(src interface{}) error {
-	if _, err := it.scan(src); err != nil {
+func (it *Iterator) Scan(ctx context.Context, src interface{}) error {
+	if _, err := it.scan(ctx, src); err != nil {
 		return err
 	}
 	return nil

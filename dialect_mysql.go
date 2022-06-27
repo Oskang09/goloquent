@@ -2,6 +2,7 @@ package goloquent
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -109,7 +110,7 @@ func (s mysql) OnConflictUpdate(table string, cols []string) string {
 	return buf.String()
 }
 
-func (s mysql) CreateTable(table string, columns []Column) error {
+func (s mysql) CreateTable(ctx context.Context, table string, columns []Column) error {
 	buf := new(bytes.Buffer)
 	buf.WriteString(fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (", s.GetTable(table)))
 	for _, c := range columns {
@@ -124,10 +125,10 @@ func (s mysql) CreateTable(table string, columns []Column) error {
 	buf.WriteString(fmt.Sprintf("PRIMARY KEY (%s)", s.Quote(pkColumn)))
 	buf.WriteString(fmt.Sprintf(") ENGINE=InnoDB DEFAULT CHARSET=%s COLLATE=%s;",
 		s.Quote(s.db.CharSet.Encoding), s.Quote(s.db.CharSet.Collation)))
-	return s.db.execStmt(&stmt{statement: buf})
+	return s.db.execStmt(ctx, &stmt{statement: buf})
 }
 
-func (s *mysql) AlterTable(table string, columns []Column, unsafe bool) error {
+func (s *mysql) AlterTable(ctx context.Context, table string, columns []Column, unsafe bool) error {
 	cols := types.StringSlice(s.GetColumns(table))
 	idxs := types.StringSlice(s.GetIndexes(table))
 
@@ -169,7 +170,7 @@ func (s *mysql) AlterTable(table string, columns []Column, unsafe bool) error {
 	blr.WriteString(` CHARACTER SET ` + s.Quote(s.db.CharSet.Encoding))
 	blr.WriteString(` COLLATE ` + s.Quote(s.db.CharSet.Collation))
 	blr.WriteRune(';')
-	return s.db.execStmt(&stmt{statement: blr})
+	return s.db.execStmt(ctx, &stmt{statement: blr})
 }
 
 func (s mysql) ToString(it interface{}) string {
@@ -206,7 +207,7 @@ func (s mysql) UpdateWithLimit() bool {
 	return true
 }
 
-func (s mysql) ReplaceInto(src, dst string) error {
+func (s mysql) ReplaceInto(ctx context.Context, src, dst string) error {
 	src, dst = s.GetTable(src), s.GetTable(dst)
 	buf := new(bytes.Buffer)
 	buf.WriteString("REPLACE INTO ")
@@ -214,7 +215,7 @@ func (s mysql) ReplaceInto(src, dst string) error {
 	buf.WriteString("SELECT * FROM ")
 	buf.WriteString(src)
 	buf.WriteString(";")
-	return s.db.execStmt(&stmt{
+	return s.db.execStmt(ctx, &stmt{
 		statement: buf,
 	})
 }

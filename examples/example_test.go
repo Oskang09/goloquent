@@ -1,6 +1,7 @@
 package examples
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"testing"
@@ -19,6 +20,7 @@ import (
 
 func TestExamples(t *testing.T) {
 
+	ctx := context.Background()
 	// mysql.RegisterTLSConfig("custom", &tls.Config{})
 	conn, err := db.Open("mysql", db.Config{
 		Username: "root",
@@ -27,7 +29,7 @@ func TestExamples(t *testing.T) {
 		Port:     "3306",
 		// TLSConfig: "",
 		Database: "goloquent",
-		Logger: func(stmt *goloquent.Stmt) {
+		Logger: func(ctx context.Context, stmt *goloquent.Stmt) {
 			log.Println(stmt.TimeElapse()) // elapse time in time.Duration
 			log.Println(stmt.String())     // Sql string without any ?
 			log.Println(stmt.Raw())        // Sql prepare statement
@@ -40,10 +42,10 @@ func TestExamples(t *testing.T) {
 		panic(err)
 	}
 
-	db.Migrate(new(User))
-	db.Truncate("User")
+	db.Migrate(ctx, new(User))
+	db.Truncate(ctx, "User")
 	u := new(User)
-	err = db.MatchAgainst([]string{"Name", "Username"}, "value", "value2").Find(datastore.IDKey("test", 100, nil), u)
+	err = db.MatchAgainst([]string{"Name", "Username"}, "value", "value2").Find(ctx, datastore.IDKey("test", 100, nil), u)
 	log.Println(err)
 
 	users := [...]User{
@@ -53,26 +55,26 @@ func TestExamples(t *testing.T) {
 		newUser(),
 		newUser(),
 	}
-	db.Create(&users)
+	db.Create(ctx, &users)
 	usrs := []User{}
 	db.NewQuery().OrderBy(
 		expr.Field("Status", []string{
 			"A", "B", "C",
 		}),
 		"-CreatedAt",
-	).Get(&usrs)
+	).Get(ctx, &usrs)
 
 	query := db.NewQuery().OrderBy(
 		"-CreatedAt",
 	)
 	pg := &goloquent.Pagination{Limit: 1}
-	err = query.Paginate(pg, &usrs)
+	err = query.Paginate(ctx, pg, &usrs)
 
 	pg.Cursor = pg.NextCursor()
-	err = query.Paginate(pg, &usrs)
+	err = query.Paginate(ctx, pg, &usrs)
 
 	pg.Cursor = pg.NextCursor()
-	err = query.Paginate(pg, &usrs)
+	err = query.Paginate(ctx, pg, &usrs)
 
 	log.Println(err)
 	log.Println(usrs)

@@ -2,6 +2,7 @@ package goloquent
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -435,11 +436,11 @@ func (s *sequel) OnConflictUpdate(table string, cols []string) string {
 	return buf.String()
 }
 
-func (s *sequel) CreateTable(string, []Column) error {
+func (s *sequel) CreateTable(context.Context, string, []Column) error {
 	return nil
 }
 
-func (s *sequel) AlterTable(string, []Column, bool) error {
+func (s *sequel) AlterTable(context.Context, string, []Column, bool) error {
 	return nil
 }
 
@@ -447,6 +448,6 @@ func (s sequel) UpdateWithLimit() bool {
 	return false
 }
 
-func (s sequel) ReplaceInto(src, dst string) error {
+func (s sequel) ReplaceInto(ctx context.Context, src, dst string) error {
 	return nil
 }

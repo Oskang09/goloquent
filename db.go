@@ -2,6 +2,7 @@ package goloquent
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -23,7 +24,7 @@ func SetPKSimple(flag bool) {
 type TransactionHandler func(*DB) error
 
 // LogHandler :
-type LogHandler func(*Stmt)
+type LogHandler func(context.Context, *Stmt)
 
 // NativeHandler :
 type NativeHandler func(*sql.DB)
@@ -74,8 +75,8 @@ func (c *Config) Normalize() {
 
 // Replacer :
 type Replacer interface {
-	Upsert(model interface{}, k ...*datastore.Key) error
-	Save(model interface{}) error
+	Upsert(ctx context.Context, model interface{}, k ...*datastore.Key) error
+	Save(ctx context.Context, model interface{}) error
 }
 
 // Client :
@@ -87,9 +88,9 @@ type Client struct {
 	logger  LogHandler
 }
 
-func (c Client) consoleLog(s *Stmt) {
+func (c Client) consoleLog(ctx context.Context, s *Stmt) {
 	if c.logger != nil {
-		c.logger(s)
+		c.logger(ctx, s)
 	}
 }
 
@@ -106,7 +107,7 @@ func (c *Client) compileStmt(query string, args ...interface{}) *Stmt {
 	return ss
 }
 
-func (c Client) execStmt(s *stmt) error {
+func (c Client) execStmt(ctx context.Context, s *stmt) error {
 	ss := &Stmt{
 		stmt:     *s,
 		replacer: c.dialect,
@@ -114,7 +115,7 @@ func (c Client) execStmt(s *stmt) error {
 	ss.startTrace()
 	defer func() {
 		ss.stopTrace()
-		c.consoleLog(ss)
+		c.consoleLog(ctx, ss)
 	}()
 	result, err := c.PrepareExec(ss.Raw(), ss.arguments...)
 	if err != nil {
@@ -124,7 +125,7 @@ func (c Client) execStmt(s *stmt) error {
 	return nil
 }
 
-func (c Client) execQuery(s *stmt) (*sql.Rows, error) {
+func (c Client) execQuery(ctx context.Context, s *stmt) (*sql.Rows, error) {
 	ss := &Stmt{
 		stmt:     *s,
 		replacer: c.dialect,
@@ -132,7 +133,7 @@ func (c Client) execQuery(s *stmt) (*sql.Rows, error) {
 	ss.startTrace()
 	defer func() {
 		ss.stopTrace()
-		c.consoleLog(ss)
+		c.consoleLog(ctx, ss)
 	}()
 	var rows, err = c.Query(ss.Raw(), ss.arguments...)
 	if err != nil {
@@ -141,7 +142,7 @@ func (c Client) execQuery(s *stmt) (*sql.Rows, error) {
 	return rows, nil
 }
 
-func (c *Client) execQueryRow(s *stmt) *sql.Row {
+func (c *Client) execQueryRow(ctx context.Context, s *stmt) *sql.Row {
 	ss := &Stmt{
 		stmt:     *s,
 		replacer: c.dialect,
@@ -149,7 +150,7 @@ func (c *Client) execQueryRow(s *stmt) *sql.Row {
 	ss.startTrace()
 	defer func() {
 		ss.stopTrace()
-		c.consoleLog(ss)
+		c.consoleLog(ctx, ss)
 	}()
 	return c.QueryRow(ss.Raw(), ss.arguments...)
 }
@@ -264,8 +265,8 @@ func (db *DB) Table(name string) *Table {
 }
 
 // Migrate :
-func (db *DB) Migrate(model ...interface{}) error {
-	return newBuilder(db.NewQuery()).migrateMultiple(model)
+func (db *DB) Migrate(ctx context.Context, model ...interface{}) error {
+	return newBuilder(db.NewQuery()).migrateMultiple(ctx, model)
 }
 
 // Omit :
@@ -279,41 +280,41 @@ func (db *DB) Omit(fields ...string) Replacer {
 }
 
 // Create :
-func (db *DB) Create(model interface{}, parentKey ...*datastore.Key) error {
+func (db *DB) Create(ctx context.Context, model interface{}, parentKey ...*datastore.Key) error {
 	if parentKey == nil {
-		return newBuilder(db.NewQuery()).put(model, nil)
+		return newBuilder(db.NewQuery()).put(ctx, model, nil)
 	}
-	return newBuilder(db.NewQuery()).put(model, parentKey)
+	return newBuilder(db.NewQuery()).put(ctx, model, parentKey)
 }
 
 // Upsert :
-func (db *DB) Upsert(model interface{}, parentKey ...*datastore.Key) error {
+func (db *DB) Upsert(ctx context.Context, model interface{}, parentKey ...*datastore.Key) error {
 	if parentKey == nil {
-		return newBuilder(db.NewQuery().Omit(db.omits...)).upsert(model, nil)
+		return newBuilder(db.NewQuery().Omit(db.omits...)).upsert(ctx, model, nil)
 	}
-	return newBuilder(db.NewQuery().Omit(db.omits...)).upsert(model, parentKey)
+	return newBuilder(db.NewQuery().Omit(db.omits...)).upsert(ctx, model, parentKey)
 }
 
 // Save :
-func (db *DB) Save(model interface{}) error {
+func (db *DB) Save(ctx context.Context, model interface{}) error {
 	if err := checkSinglePtr(model); err != nil {
 		return err
 	}
-	return newBuilder(db.NewQuery().Omit(db.omits...)).save(model)
+	return newBuilder(db.NewQuery().Omit(db.omits...)).save(ctx, model)
 }
 
 // Delete :
-func (db *DB) Delete(model interface{}) error {
-	return newBuilder(db.NewQuery()).delete(model, true)
+func (db *DB) Delete(ctx context.Context, model interface{}) error {
+	return newBuilder(db.NewQuery()).delete(ctx, model, true)
 }
 
 // Destroy :
-func (db *DB) Destroy(model interface{}) error {
-	return newBuilder(db.NewQuery()).delete(model, false)
+func (db *DB) Destroy(ctx context.Context, model interface{}) error {
+	return newBuilder(db.NewQuery()).delete(ctx, model, false)
 }
 
 // Truncate :
-func (db *DB) Truncate(model ...interface{}) error {
+func (db *DB) Truncate(ctx context.Context, model ...interface{}) error {
 	ns := make([]string, 0, len(model))
 	for _, m := range model {
 		var table string
@@ -333,7 +334,7 @@ func (db *DB) Truncate(model ...interface{}) error {
 		}
 		ns = append(ns, table)
 	}
-	return newBuilder(db.NewQuery()).truncate(ns...)
+	return newBuilder(db.NewQuery()).truncate(ctx, ns...)
 }
 
 // Select :
@@ -342,23 +343,23 @@ func (db *DB) Select(fields ...string) *Query {
 }
 
 // Find :
-func (db *DB) Find(key *datastore.Key, model interface{}) error {
-	return db.NewQuery().Find(key, model)
+func (db *DB) Find(ctx context.Context, key *datastore.Key, model interface{}) error {
+	return db.NewQuery().Find(ctx, key, model)
 }
 
 // First :
-func (db *DB) First(model interface{}) error {
-	return db.NewQuery().First(model)
+func (db *DB) First(ctx context.Context, model interface{}) error {
+	return db.NewQuery().First(ctx, model)
 }
 
 // Get :
-func (db *DB) Get(model interface{}) error {
-	return db.NewQuery().Get(model)
+func (db *DB) Get(ctx context.Context, model interface{}) error {
+	return db.NewQuery().Get(ctx, model)
 }
 
 // Paginate :
-func (db *DB) Paginate(p *Pagination, model interface{}) error {
-	return db.NewQuery().Paginate(p, model)
+func (db *DB) Paginate(ctx context.Context, p *Pagination, model interface{}) error {
+	return db.NewQuery().Paginate(ctx, p, model)
 }
 
 // Ancestor :

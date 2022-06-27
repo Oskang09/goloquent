@@ -2,6 +2,7 @@ package goloquent
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -194,7 +195,7 @@ func (q *Query) Unscoped() *Query {
 }
 
 // Find :
-func (q *Query) Find(key *datastore.Key, model interface{}) error {
+func (q *Query) Find(ctx context.Context, key *datastore.Key, model interface{}) error {
 	if err := q.getError(); err != nil {
 		return err
 	}
@@ -205,11 +206,11 @@ func (q *Query) Find(key *datastore.Key, model interface{}) error {
 		return fmt.Errorf("goloquent: find action with invalid key value, %q", key)
 	}
 	q = q.Where(keyFieldName, "=", key).Limit(1)
-	return newBuilder(q).get(model, true)
+	return newBuilder(q).get(ctx, model, true)
 }
 
 // First :
-func (q *Query) First(model interface{}) error {
+func (q *Query) First(ctx context.Context, model interface{}) error {
 	q = q.clone()
 	if err := q.getError(); err != nil {
 		return err
@@ -218,20 +219,20 @@ func (q *Query) First(model interface{}) error {
 		return err
 	}
 	q.Limit(1)
-	return newBuilder(q).get(model, false)
+	return newBuilder(q).get(ctx, model, false)
 }
 
 // Get :
-func (q *Query) Get(model interface{}) error {
+func (q *Query) Get(ctx context.Context, model interface{}) error {
 	q = q.clone()
 	if err := q.getError(); err != nil {
 		return err
 	}
-	return newBuilder(q).getMulti(model)
+	return newBuilder(q).getMulti(ctx, model)
 }
 
 // Paginate :
-func (q *Query) Paginate(p *Pagination, model interface{}) error {
+func (q *Query) Paginate(ctx context.Context, p *Pagination, model interface{}) error {
 	if err := q.getError(); err != nil {
 		return err
 	}
@@ -258,7 +259,7 @@ func (q *Query) Paginate(p *Pagination, model interface{}) error {
 	} else {
 		q = q.OrderBy(pkColumn)
 	}
-	return newBuilder(q).paginate(p, model)
+	return newBuilder(q).paginate(ctx, p, model)
 }
 
 // Ancestor :
@@ -495,7 +496,7 @@ func (q *Query) MatchAgainst(fields []string, values ...string) *Query {
 	}
 	buf.WriteString(") AGAINST(")
 	v := ""
-	for i, _ := range values {
+	for i := range values {
 		if i > 0 {
 			buf.WriteByte(' ')
 		}
@@ -585,36 +586,36 @@ func (q *Query) Offset(offset int) *Query {
 }
 
 // ReplaceInto :
-func (q *Query) ReplaceInto(table string) error {
-	return newBuilder(q).replaceInto(table)
+func (q *Query) ReplaceInto(ctx context.Context, table string) error {
+	return newBuilder(q).replaceInto(ctx, table)
 }
 
 // InsertInto :
-func (q *Query) InsertInto(table string) error {
-	return newBuilder(q).insertInto(table)
+func (q *Query) InsertInto(ctx context.Context, table string) error {
+	return newBuilder(q).insertInto(ctx, table)
 }
 
 // Update :
-func (q *Query) Update(v interface{}) error {
+func (q *Query) Update(ctx context.Context, v interface{}) error {
 	if err := q.getError(); err != nil {
 		return err
 	}
 	// q = q.OrderBy(pkColumn)
-	return newBuilder(q).updateMulti(v)
+	return newBuilder(q).updateMulti(ctx, v)
 }
 
 // Flush :
-func (q *Query) Flush() error {
+func (q *Query) Flush(ctx context.Context) error {
 	if err := q.getError(); err != nil {
 		return err
 	}
 	if q.table == "" {
 		return fmt.Errorf("goloquent: unable to perform delete without table name")
 	}
-	return newBuilder(q).deleteByQuery()
+	return newBuilder(q).deleteByQuery(ctx)
 }
 
 // Scan :
-func (q *Query) Scan(dest ...interface{}) error {
-	return newBuilder(q).scan(dest...)
+func (q *Query) Scan(ctx context.Context, dest ...interface{}) error {
+	return newBuilder(q).scan(ctx, dest...)
 }

@@ -1,6 +1,8 @@
 package goloquent
 
 import (
+	"context"
+
 	"cloud.google.com/go/datastore"
 )
 
@@ -17,18 +19,18 @@ func (t *Table) newQuery() *Query {
 }
 
 // Create :
-func (t *Table) Create(model interface{}, parentKey ...*datastore.Key) error {
-	return newBuilder(t.newQuery()).put(model, parentKey)
+func (t *Table) Create(ctx context.Context, model interface{}, parentKey ...*datastore.Key) error {
+	return newBuilder(t.newQuery()).put(ctx, model, parentKey)
 }
 
 // Upsert :
-func (t *Table) Upsert(model interface{}, parentKey ...*datastore.Key) error {
-	return newBuilder(t.newQuery()).upsert(model, parentKey)
+func (t *Table) Upsert(ctx context.Context, model interface{}, parentKey ...*datastore.Key) error {
+	return newBuilder(t.newQuery()).upsert(ctx, model, parentKey)
 }
 
 // Migrate :
-func (t *Table) Migrate(model interface{}) error {
-	return newBuilder(t.newQuery()).migrate(model)
+func (t *Table) Migrate(ctx context.Context, model interface{}) error {
+	return newBuilder(t.newQuery()).migrate(ctx, model)
 }
 
 // Exists :
@@ -37,13 +39,13 @@ func (t *Table) Exists() bool {
 }
 
 // DropIfExists :
-func (t *Table) DropIfExists() error {
-	return newBuilder(t.newQuery()).dropTableIfExists(t.name)
+func (t *Table) DropIfExists(ctx context.Context) error {
+	return newBuilder(t.newQuery()).dropTableIfExists(ctx, t.name)
 }
 
 // Truncate :
-func (t *Table) Truncate() error {
-	return newBuilder(t.newQuery()).truncate(t.name)
+func (t *Table) Truncate(ctx context.Context) error {
+	return newBuilder(t.newQuery()).truncate(ctx, t.name)
 }
 
 // // Rename :
@@ -52,13 +54,13 @@ func (t *Table) Truncate() error {
 // }
 
 // AddIndex :
-func (t *Table) AddIndex(fields ...string) error {
-	return newBuilder(t.newQuery()).addIndex(fields, bTreeIdx)
+func (t *Table) AddIndex(ctx context.Context, fields ...string) error {
+	return newBuilder(t.newQuery()).addIndex(ctx, fields, bTreeIdx)
 }
 
 // AddUniqueIndex :
-func (t *Table) AddUniqueIndex(fields ...string) error {
-	return newBuilder(t.newQuery()).addIndex(fields, uniqueIdx)
+func (t *Table) AddUniqueIndex(ctx context.Context, fields ...string) error {
+	return newBuilder(t.newQuery()).addIndex(ctx, fields, uniqueIdx)
 }
 
 // Select :
@@ -82,23 +84,23 @@ func (t *Table) Unscoped() *Query {
 }
 
 // Find :
-func (t *Table) Find(key *datastore.Key, model interface{}) error {
-	return t.newQuery().Find(key, model)
+func (t *Table) Find(ctx context.Context, key *datastore.Key, model interface{}) error {
+	return t.newQuery().Find(ctx, key, model)
 }
 
 // First :
-func (t *Table) First(model interface{}) error {
-	return t.newQuery().First(model)
+func (t *Table) First(ctx context.Context, model interface{}) error {
+	return t.newQuery().First(ctx, model)
 }
 
 // Get :
-func (t *Table) Get(model interface{}) error {
-	return t.newQuery().Get(model)
+func (t *Table) Get(ctx context.Context, model interface{}) error {
+	return t.newQuery().Get(ctx, model)
 }
 
 // Paginate :
-func (t *Table) Paginate(p *Pagination, model interface{}) error {
-	return t.newQuery().Paginate(p, model)
+func (t *Table) Paginate(ctx context.Context, p *Pagination, model interface{}) error {
+	return t.newQuery().Paginate(ctx, p, model)
 }
 
 // AnyOfAncestor :
@@ -192,26 +194,26 @@ func (t *Table) Offset(offset int) *Query {
 }
 
 // ReplaceInto :
-func (t *Table) ReplaceInto(table string) error {
-	return t.newQuery().ReplaceInto(table)
+func (t *Table) ReplaceInto(ctx context.Context, table string) error {
+	return t.newQuery().ReplaceInto(ctx, table)
 }
 
 // InsertInto :
-func (t *Table) InsertInto(table string) error {
-	return t.newQuery().InsertInto(table)
+func (t *Table) InsertInto(ctx context.Context, table string) error {
+	return t.newQuery().InsertInto(ctx, table)
 }
 
 // Update :
-func (t *Table) Update(v interface{}) error {
-	return t.newQuery().Update(v)
+func (t *Table) Update(ctx context.Context, v interface{}) error {
+	return t.newQuery().Update(ctx, v)
 }
 
 // Save :
-func (t *Table) Save(model interface{}) error {
-	return newBuilder(t.newQuery()).save(model)
+func (t *Table) Save(ctx context.Context, model interface{}) error {
+	return newBuilder(t.newQuery()).save(ctx, model)
 }
 
 // Scan :
-func (t *Table) Scan(dest ...interface{}) error {
-	return t.newQuery().Scan(dest...)
+func (t *Table) Scan(ctx context.Context, dest ...interface{}) error {
+	return t.newQuery().Scan(ctx, dest...)
 }
