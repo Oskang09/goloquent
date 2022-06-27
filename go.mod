@@ -1,4 +1,4 @@
-module github.com/si3nloong/goloquent
+module github.com/Oskang09/goloquent
 
 go 1.16
 
