@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/datastore"
-	"github.com/si3nloong/goloquent"
+	"github.com/Oskang09/goloquent"
 )
 
 // User :

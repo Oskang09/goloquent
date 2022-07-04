@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"cloud.google.com/go/datastore"
+	"github.com/Oskang09/goloquent"
+	"github.com/Oskang09/goloquent/db"
+	"github.com/Oskang09/goloquent/expr"
 	"github.com/brianvoe/gofakeit"
-	"github.com/si3nloong/goloquent"
-	"github.com/si3nloong/goloquent/db"
-	"github.com/si3nloong/goloquent/expr"
 
 	//  "database/sql"
 
@@ -22,7 +22,7 @@ func TestExamples(t *testing.T) {
 
 	ctx := context.Background()
 	// mysql.RegisterTLSConfig("custom", &tls.Config{})
-	conn, err := db.Open("mysql", db.Config{
+	conn, err := db.Open(ctx, "mysql", db.Config{
 		Username: "root",
 		Password: "abcd1234",
 		Host:     "localhost",

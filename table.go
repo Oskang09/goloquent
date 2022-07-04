@@ -34,8 +34,8 @@ func (t *Table) Migrate(ctx context.Context, model interface{}) error {
 }
 
 // Exists :
-func (t *Table) Exists() bool {
-	return t.db.dialect.HasTable(t.name)
+func (t *Table) Exists(ctx context.Context) bool {
+	return t.db.dialect.HasTable(ctx, t.name)
 }
 
 // DropIfExists :

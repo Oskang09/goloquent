@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"cloud.google.com/go/datastore"
-	"github.com/si3nloong/goloquent/expr"
+	"github.com/Oskang09/goloquent/expr"
 )
 
 type operator int

@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/si3nloong/goloquent/types"
+	"github.com/Oskang09/goloquent/types"
 )
 
 type mysql struct {
@@ -58,9 +58,9 @@ func (s *mysql) Open(conf Config) (*sql.DB, error) {
 }
 
 // Version :
-func (s mysql) Version() (version string) {
+func (s mysql) Version(ctx context.Context) (version string) {
 	verRgx := regexp.MustCompile(`(\d\.\d)`)
-	s.db.QueryRow("SELECT VERSION();").Scan(&version)
+	s.db.QueryRow(ctx, "SELECT VERSION();").Scan(&version)
 	log.Println("MySQL version :", version)
 	if compareVersion(verRgx.FindStringSubmatch(version)[0], minVersion) > 0 {
 		panic(fmt.Errorf("require at least %s version of mysql", minVersion))
@@ -129,8 +129,8 @@ func (s mysql) CreateTable(ctx context.Context, table string, columns []Column) 
 }
 
 func (s *mysql) AlterTable(ctx context.Context, table string, columns []Column, unsafe bool) error {
-	cols := types.StringSlice(s.GetColumns(table))
-	idxs := types.StringSlice(s.GetIndexes(table))
+	cols := types.StringSlice(s.GetColumns(ctx, table))
+	idxs := types.StringSlice(s.GetIndexes(ctx, table))
 
 	var idx string
 	blr := new(bytes.Buffer)

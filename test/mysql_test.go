@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"cloud.google.com/go/datastore"
+	"github.com/Oskang09/goloquent"
+	"github.com/Oskang09/goloquent/db"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/si3nloong/goloquent"
-	"github.com/si3nloong/goloquent/db"
 )
 
 var (
@@ -20,7 +20,7 @@ var (
 )
 
 func TestMySQLConn(t *testing.T) {
-	conn, err := db.Open("mysql", db.Config{
+	conn, err := db.Open(ctx, "mysql", db.Config{
 		Username: "root",
 		Password: "abcd1234",
 		Database: "goloquent",
@@ -47,7 +47,7 @@ func TestMySQLMigration(t *testing.T) {
 }
 
 func TestMySQLTableExists(t *testing.T) {
-	if isExist := my.Table("User").Exists(); isExist != true {
+	if isExist := my.Table("User").Exists(ctx); isExist != true {
 		t.Fatal(fmt.Errorf("Unexpected error, table %q should exists", "User"))
 	}
 }

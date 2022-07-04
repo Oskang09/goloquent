@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"cloud.google.com/go/datastore"
+	"github.com/Oskang09/goloquent"
 	"github.com/bxcodec/faker"
-	"github.com/si3nloong/goloquent"
 )
 
 var (

@@ -12,8 +12,8 @@ type Dialect interface {
 	Open(c Config) (*sql.DB, error)
 	SetDB(db Client)
 	GetTable(ns string) string
-	Version() (ver string)
-	CurrentDB() (n string)
+	Version(ctx context.Context) (ver string)
+	CurrentDB(ctx context.Context) (n string)
 	Quote(n string) string
 	Bind(i uint) string
 	FilterJSON(f Filter) (s string, args []interface{}, err error)
@@ -21,10 +21,10 @@ type Dialect interface {
 	Value(v interface{}) string
 	GetSchema(c Column) []Schema
 	DataType(s Schema) string
-	HasTable(tb string) bool
-	HasIndex(tb, idx string) bool
-	GetColumns(tb string) (cols []string)
-	GetIndexes(tb string) (idxs []string)
+	HasTable(ctx context.Context, tb string) bool
+	HasIndex(ctx context.Context, tb, idx string) bool
+	GetColumns(ctx context.Context, tb string) (cols []string)
+	GetIndexes(ctx context.Context, tb string) (idxs []string)
 	CreateTable(ctx context.Context, tb string, cols []Column) error
 	AlterTable(ctx context.Context, tb string, cols []Column, unsafe bool) error
 	OnConflictUpdate(tb string, cols []string) string

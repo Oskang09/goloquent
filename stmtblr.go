@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/si3nloong/goloquent/expr"
+	"github.com/Oskang09/goloquent/expr"
 )
 
 var stmtRegistry *StmtRegistry

@@ -59,13 +59,13 @@ func (p postgres) GetTable(name string) string {
 }
 
 // CurrentDB :
-func (p *postgres) CurrentDB() (name string) {
+func (p *postgres) CurrentDB(ctx context.Context) (name string) {
 	if p.dbName != "" {
 		name = p.dbName
 		return
 	}
 
-	p.db.QueryRow("SELECT current_database();").Scan(&name)
+	p.db.QueryRow(ctx, "SELECT current_database();").Scan(&name)
 	p.dbName = name
 	return
 }
@@ -338,9 +338,9 @@ func (p postgres) GetSchema(c Column) []Schema {
 }
 
 // GetColumns :
-func (p *postgres) GetColumns(table string) (columns []string) {
+func (p *postgres) GetColumns(ctx context.Context, table string) (columns []string) {
 	stmt := "SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = $1;"
-	rows, _ := p.db.Query(stmt, table)
+	rows, _ := p.db.Query(ctx, stmt, table)
 	defer rows.Close()
 	for i := 0; rows.Next(); i++ {
 		columns = append(columns, "")
@@ -350,9 +350,9 @@ func (p *postgres) GetColumns(table string) (columns []string) {
 }
 
 // GetIndexes :
-func (p *postgres) GetIndexes(table string) (idxs []string) {
+func (p *postgres) GetIndexes(ctx context.Context, table string) (idxs []string) {
 	stmt := "SELECT indexname FROM pg_indexes WHERE schemaname = CURRENT_SCHEMA() AND tablename = $1;"
-	rows, _ := p.db.Query(stmt, table)
+	rows, _ := p.db.Query(ctx, stmt, table)
 	defer rows.Close()
 	for i := 0; rows.Next(); i++ {
 		idxs = append(idxs, "")
@@ -361,15 +361,15 @@ func (p *postgres) GetIndexes(table string) (idxs []string) {
 	return
 }
 
-func (p *postgres) HasTable(table string) bool {
+func (p *postgres) HasTable(ctx context.Context, table string) bool {
 	var count int
-	p.db.QueryRow("SELECT count(*) FROM INFORMATION_SCHEMA.tables WHERE table_type = 'BASE TABLE' AND table_schema = CURRENT_SCHEMA() AND table_name = $1;", table).Scan(&count)
+	p.db.QueryRow(ctx, "SELECT count(*) FROM INFORMATION_SCHEMA.tables WHERE table_type = 'BASE TABLE' AND table_schema = CURRENT_SCHEMA() AND table_name = $1;", table).Scan(&count)
 	return count > 0
 }
 
-func (p *postgres) HasIndex(table, idx string) bool {
+func (p *postgres) HasIndex(ctx context.Context, table, idx string) bool {
 	var count int
-	p.db.QueryRow("SELECT count(*) FROM pg_indexes WHERE tablename = $1 AND indexname = $2 AND schemaname = CURRENT_SCHEMA()", table, idx).Scan(&count)
+	p.db.QueryRow(ctx, "SELECT count(*) FROM pg_indexes WHERE tablename = $1 AND indexname = $2 AND schemaname = CURRENT_SCHEMA()", table, idx).Scan(&count)
 	return count > 0
 }
 
@@ -442,8 +442,8 @@ func (p *postgres) CreateTable(ctx context.Context, table string, columns []Colu
 }
 
 func (p *postgres) AlterTable(ctx context.Context, table string, columns []Column, unsafe bool) error {
-	cols := newDictionary(p.GetColumns(table))
-	idxs := newDictionary(p.GetIndexes(table))
+	cols := newDictionary(p.GetColumns(ctx, table))
+	idxs := newDictionary(p.GetIndexes(ctx, table))
 	idxs.delete(fmt.Sprintf("%s_pkey", table))
 	buf := new(bytes.Buffer)
 	buf.WriteString(fmt.Sprintf("ALTER TABLE %s ", p.GetTable(table)))
@@ -518,7 +518,7 @@ func (p *postgres) AlterTable(ctx context.Context, table string, columns []Colum
 }
 
 func (p *postgres) ReplaceInto(ctx context.Context, src, dst string) error {
-	cols := p.GetColumns(src)
+	cols := p.GetColumns(ctx, src)
 	pk := p.Quote(pkColumn)
 	src, dst = p.GetTable(src), p.GetTable(dst)
 	buf := new(bytes.Buffer)

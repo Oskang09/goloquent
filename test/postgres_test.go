@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Oskang09/goloquent"
+	"github.com/Oskang09/goloquent/db"
 	_ "github.com/lib/pq"
-	"github.com/si3nloong/goloquent"
-	"github.com/si3nloong/goloquent/db"
 )
 
 var (
@@ -18,7 +18,7 @@ var (
 )
 
 func TestPostgresConn(t *testing.T) {
-	conn, err := db.Open("postgres", db.Config{
+	conn, err := db.Open(ctx, "postgres", db.Config{
 		Username: "sianloong",
 		Database: "goloquent",
 		Logger: func(ctx context.Context, stmt *goloquent.Stmt) {
@@ -44,7 +44,7 @@ func TestPostgresMigration(t *testing.T) {
 }
 
 func TestPostgresTableExists(t *testing.T) {
-	if isExist := pg.Table("User").Exists(); isExist != true {
+	if isExist := pg.Table("User").Exists(ctx); isExist != true {
 		t.Fatal(fmt.Errorf("Unexpected error, table %q should exists", "User"))
 	}
 }

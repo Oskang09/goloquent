@@ -1,11 +1,12 @@
 package db
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
 
-	"github.com/si3nloong/goloquent"
+	"github.com/Oskang09/goloquent"
 )
 
 var (
@@ -32,7 +33,7 @@ type Config struct {
 }
 
 // Open :
-func Open(driver string, conf Config) (*goloquent.DB, error) {
+func Open(ctx context.Context, driver string, conf Config) (*goloquent.DB, error) {
 	driver = strings.TrimSpace(strings.ToLower(driver))
 	dialect, ok := goloquent.GetDialect(driver)
 	if !ok {
@@ -69,7 +70,7 @@ func Open(driver string, conf Config) (*goloquent.DB, error) {
 		return nil, fmt.Errorf("goloquent: %s server has not response", driver)
 	}
 
-	db := goloquent.NewDB(driver, *config.CharSet, conn, dialect, conf.Logger)
+	db := goloquent.NewDB(ctx, driver, *config.CharSet, conn, dialect, conf.Logger)
 	pool[conf.Database] = db
 	connPool.Store(driver, pool)
 	// Override defaultDB whenever we initialise a new connection

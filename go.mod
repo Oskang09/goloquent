@@ -3,7 +3,6 @@ module github.com/Oskang09/goloquent
 go 1.16
 
 require (
-	cloud.google.com/go v0.94.1 // indirect
 	cloud.google.com/go/datastore v1.5.0
 	github.com/brianvoe/gofakeit v3.18.0+incompatible
 	github.com/bxcodec/faker v2.0.1+incompatible

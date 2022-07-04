@@ -22,10 +22,10 @@ func checkMultiPtr(v reflect.Value) (isPtr bool, t reflect.Type) {
 }
 
 type sqlCommon interface {
-	Prepare(query string) (*sql.Stmt, error)
-	Exec(query string, args ...interface{}) (sql.Result, error)
-	Query(query string, args ...interface{}) (*sql.Rows, error)
-	QueryRow(query string, args ...interface{}) *sql.Row
+	PrepareContext(ctx context.Context, query string) (*sql.Stmt, error)
+	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
+	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
+	QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row
 }
 
 type sqlExtra interface {
@@ -65,19 +65,19 @@ func (s *sequel) GetTable(name string) string {
 }
 
 // Version :
-func (s *sequel) Version() (version string) {
-	s.db.QueryRow("SELECT VERSION();").Scan(&version)
+func (s *sequel) Version(ctx context.Context) (version string) {
+	s.db.QueryRow(ctx, "SELECT VERSION();").Scan(&version)
 	return
 }
 
 // CurrentDB :
-func (s *sequel) CurrentDB() (name string) {
+func (s *sequel) CurrentDB(ctx context.Context) (name string) {
 	if s.dbName != "" {
 		name = s.dbName
 		return
 	}
 
-	s.db.QueryRow("SELECT DATABASE();").Scan(&name)
+	s.db.QueryRow(ctx, "SELECT DATABASE();").Scan(&name)
 	s.dbName = name
 	return
 }
@@ -390,9 +390,9 @@ func (s *sequel) GetSchema(c Column) []Schema {
 }
 
 // GetColumns :
-func (s *sequel) GetColumns(table string) (columns []string) {
+func (s *sequel) GetColumns(ctx context.Context, table string) (columns []string) {
 	stmt := "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?;"
-	rows, _ := s.db.Query(stmt, s.CurrentDB(), table)
+	rows, _ := s.db.Query(ctx, stmt, s.CurrentDB(ctx), table)
 	defer rows.Close()
 	for i := 0; rows.Next(); i++ {
 		columns = append(columns, "")
@@ -402,9 +402,9 @@ func (s *sequel) GetColumns(table string) (columns []string) {
 }
 
 // GetIndexes :
-func (s *sequel) GetIndexes(table string) (idxs []string) {
+func (s *sequel) GetIndexes(ctx context.Context, table string) (idxs []string) {
 	stmt := "SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME <> ?;"
-	rows, _ := s.db.Query(stmt, s.CurrentDB(), table, "PRIMARY")
+	rows, _ := s.db.Query(ctx, stmt, s.CurrentDB(ctx), table, "PRIMARY")
 	defer rows.Close()
 	for i := 0; rows.Next(); i++ {
 		idxs = append(idxs, "")
@@ -413,15 +413,15 @@ func (s *sequel) GetIndexes(table string) (idxs []string) {
 	return
 }
 
-func (s *sequel) HasTable(table string) bool {
+func (s *sequel) HasTable(ctx context.Context, table string) bool {
 	var count int
-	s.db.QueryRow("SELECT count(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?", s.CurrentDB(), table).Scan(&count)
+	s.db.QueryRow(ctx, "SELECT count(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?", s.CurrentDB(ctx), table).Scan(&count)
 	return count > 0
 }
 
-func (s *sequel) HasIndex(table, idx string) bool {
+func (s *sequel) HasIndex(ctx context.Context, table, idx string) bool {
 	var count int
-	s.db.QueryRow("SELECT count(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?", s.CurrentDB(), table, idx).Scan(&count)
+	s.db.QueryRow(ctx, "SELECT count(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?", s.CurrentDB(ctx), table, idx).Scan(&count)
 	return count > 0
 }
 

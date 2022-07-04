@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/datastore"
-	"github.com/si3nloong/goloquent/expr"
+	"github.com/Oskang09/goloquent/expr"
 )
 
 const (
@@ -54,7 +54,7 @@ func (b *builder) addIndex(ctx context.Context, fields []string, idx index) erro
 		buf.WriteString(" UNIQUE")
 	default:
 	}
-	if b.db.dialect.HasIndex(table, idxName) {
+	if b.db.dialect.HasIndex(ctx, table, idxName) {
 		return nil
 	}
 	buf.WriteString(fmt.Sprintf(" INDEX %s ON %s (%s);",
@@ -373,7 +373,7 @@ func (b *builder) migrate(ctx context.Context, model interface{}) error {
 		return err
 	}
 	e.setName(b.query.table)
-	if b.db.dialect.HasTable(e.Name()) {
+	if b.db.dialect.HasTable(ctx, e.Name()) {
 		return b.alterTable(ctx, e)
 	}
 	return b.createTable(ctx, e)

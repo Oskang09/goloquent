@@ -117,7 +117,7 @@ func (c Client) execStmt(ctx context.Context, s *stmt) error {
 		ss.stopTrace()
 		c.consoleLog(ctx, ss)
 	}()
-	result, err := c.PrepareExec(ss.Raw(), ss.arguments...)
+	result, err := c.PrepareExec(ctx, ss.Raw(), ss.arguments...)
 	if err != nil {
 		return err
 	}
@@ -135,7 +135,7 @@ func (c Client) execQuery(ctx context.Context, s *stmt) (*sql.Rows, error) {
 		ss.stopTrace()
 		c.consoleLog(ctx, ss)
 	}()
-	var rows, err = c.Query(ss.Raw(), ss.arguments...)
+	var rows, err = c.Query(ctx, ss.Raw(), ss.arguments...)
 	if err != nil {
 		return nil, err
 	}
@@ -152,12 +152,12 @@ func (c *Client) execQueryRow(ctx context.Context, s *stmt) *sql.Row {
 		ss.stopTrace()
 		c.consoleLog(ctx, ss)
 	}()
-	return c.QueryRow(ss.Raw(), ss.arguments...)
+	return c.QueryRow(ctx, ss.Raw(), ss.arguments...)
 }
 
 // PrepareExec :
-func (c Client) PrepareExec(query string, args ...interface{}) (sql.Result, error) {
-	conn, err := c.sqlCommon.Prepare(query)
+func (c Client) PrepareExec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+	conn, err := c.sqlCommon.PrepareContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("goloquent: unable to prepare sql statement : %v", err)
 	}
@@ -170,8 +170,8 @@ func (c Client) PrepareExec(query string, args ...interface{}) (sql.Result, erro
 }
 
 // Exec :
-func (c Client) Exec(query string, args ...interface{}) (sql.Result, error) {
-	result, err := c.sqlCommon.Exec(query, args...)
+func (c Client) Exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+	result, err := c.sqlCommon.ExecContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("goloquent: %v", err)
 	}
@@ -179,8 +179,8 @@ func (c Client) Exec(query string, args ...interface{}) (sql.Result, error) {
 }
 
 // Query :
-func (c Client) Query(query string, args ...interface{}) (*sql.Rows, error) {
-	rows, err := c.sqlCommon.Query(query, args...)
+func (c Client) Query(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+	rows, err := c.sqlCommon.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("goloquent: %v", err)
 	}
@@ -188,8 +188,8 @@ func (c Client) Query(query string, args ...interface{}) (*sql.Rows, error) {
 }
 
 // QueryRow :
-func (c Client) QueryRow(query string, args ...interface{}) *sql.Row {
-	return c.sqlCommon.QueryRow(query, args...)
+func (c Client) QueryRow(ctx context.Context, query string, args ...interface{}) *sql.Row {
+	return c.sqlCommon.QueryRowContext(ctx, query, args...)
 }
 
 // DB :
@@ -204,7 +204,7 @@ type DB struct {
 }
 
 // NewDB :
-func NewDB(driver string, charset CharSet, conn sqlCommon, dialect Dialect, logHandler LogHandler) *DB {
+func NewDB(ctx context.Context, driver string, charset CharSet, conn sqlCommon, dialect Dialect, logHandler LogHandler) *DB {
 	client := Client{
 		driver:    driver,
 		sqlCommon: conn,
@@ -216,7 +216,7 @@ func NewDB(driver string, charset CharSet, conn sqlCommon, dialect Dialect, logH
 	return &DB{
 		id:      fmt.Sprintf("%s:%d", driver, time.Now().UnixNano()),
 		driver:  driver,
-		name:    dialect.CurrentDB(),
+		name:    dialect.CurrentDB(ctx),
 		client:  client,
 		dialect: dialect,
 	}
@@ -250,13 +250,13 @@ func (db *DB) NewQuery() *Query {
 }
 
 // Query :
-func (db *DB) Query(stmt string, args ...interface{}) (*sql.Rows, error) {
-	return db.client.Query(stmt, args...)
+func (db *DB) Query(ctx context.Context, stmt string, args ...interface{}) (*sql.Rows, error) {
+	return db.client.Query(ctx, stmt, args...)
 }
 
 // Exec :
-func (db *DB) Exec(stmt string, args ...interface{}) (sql.Result, error) {
-	return db.client.Exec(stmt, args...)
+func (db *DB) Exec(ctx context.Context, stmt string, args ...interface{}) (sql.Result, error) {
+	return db.client.Exec(ctx, stmt, args...)
 }
 
 // Table :

@@ -30,13 +30,13 @@ This repo still under development. We accept any pull request. ^\_^
   $ go get -u github.com/go-sql-driver/mysql // Mysql
   $ go get -u github.com/lib/pq // Postgres
   $ go get -u cloud.google.com/go/datastore
-  $ go get -u github.com/si3nloong/goloquent
+  $ go get -u github.com/Oskang09/goloquent
 ```
 
 - **Import the library**
 
 ```go
-  import "github.com/si3nloong/goloquent"
+  import "github.com/Oskang09/goloquent"
 ```
 
 ## Quick Start
@@ -44,7 +44,7 @@ This repo still under development. We accept any pull request. ^\_^
 ### Connect to database
 
 ```go
-    import "github.com/si3nloong/goloquent/db"
+    import "github.com/Oskang09/goloquent/db"
 
     conn, err := db.Open("mysql", db.Config{
         Username: "root",
@@ -127,7 +127,7 @@ func (x *User) Save() (error) {
 ### Table
 
 ```go
-    import "github.com/si3nloong/goloquent/db"
+    import "github.com/Oskang09/goloquent/db"
 
     // Check table exists
     db.Table("User").Exists() // true
@@ -151,7 +151,7 @@ func (x *User) Save() (error) {
 ### Create Record
 
 ```go
-    import "github.com/si3nloong/goloquent/db"
+    import "github.com/Oskang09/goloquent/db"
 
     // Example
     user := new(User)
@@ -189,7 +189,7 @@ func (x *User) Save() (error) {
 ### Upsert Record
 
 ```go
-    import "github.com/si3nloong/goloquent/db"
+    import "github.com/Oskang09/goloquent/db"
 
     // Example
     user := new(User)
@@ -234,7 +234,7 @@ func (x *User) Save() (error) {
 - **Get Single Record**
 
 ```go
-    import "github.com/si3nloong/goloquent/db"
+    import "github.com/Oskang09/goloquent/db"
     // Example 1
     user := new(User)
     if err := db.First(user); err != nil {
@@ -269,7 +269,7 @@ func (x *User) Save() (error) {
 - **Get Multiple Record**
 
 ```go
-    import "github.com/si3nloong/goloquent/db"
+    import "github.com/Oskang09/goloquent/db"
     // Example 1
     users := new([]User)
     if err := db.Limit(10).Get(ctx, users); err != nil {
@@ -296,7 +296,7 @@ func (x *User) Save() (error) {
 - **Get Record with OrderBying**
 
 ```go
-    import "github.com/si3nloong/goloquent/db"
+    import "github.com/Oskang09/goloquent/db"
     // Ascending OrderBy
     users := new([]*User)
     if err := db.OrderBy("CreatedDateTime").
@@ -315,7 +315,7 @@ func (x *User) Save() (error) {
 - **Pagination Record**
 
 ```go
-    import "github.com/si3nloong/goloquent/db"
+    import "github.com/Oskang09/goloquent/db"
 
     p := goloquent.Pagination{
         Limit:  10,
@@ -350,7 +350,7 @@ func (x *User) Save() (error) {
 ### Save Record
 
 ```go
-    import "github.com/si3nloong/goloquent/db"
+    import "github.com/Oskang09/goloquent/db"
     // Example
     if err := db.Save(user); err != nil {
         log.Println(err) // fail to delete record
@@ -362,7 +362,7 @@ func (x *User) Save() (error) {
 - **Delete using Primary Key**
 
 ```go
-    import "github.com/si3nloong/goloquent/db"
+    import "github.com/Oskang09/goloquent/db"
     // Example
     if err := db.Delete(user); err != nil {
         log.Println(err) // fail to delete record
@@ -432,7 +432,7 @@ func (x *User) Save() (error) {
 - **Database Migration**
 
 ```go
-    import "github.com/si3nloong/goloquent/db"
+    import "github.com/Oskang09/goloquent/db"
     // Example
     user := new(User)
     if err := db.Migrate(
@@ -447,7 +447,7 @@ func (x *User) Save() (error) {
 - **Filter Query**
 
 ```go
-    import "github.com/si3nloong/goloquent/db"
+    import "github.com/Oskang09/goloquent/db"
     // Update single record
     user := new(User)
     if err := db.NewQuery().
@@ -467,7 +467,7 @@ func (x *User) Save() (error) {
 - **Update Query**
 
 ```go
-    import "github.com/si3nloong/goloquent/db"
+    import "github.com/Oskang09/goloquent/db"
     // Update multiple record
     if err := db.Table("User").
         Where("Age", ">", 10).
@@ -494,7 +494,7 @@ func (x *User) Save() (error) {
 - **JSON Filter**
 
 ```go
-    import "github.com/si3nloong/goloquent/db"
+    import "github.com/Oskang09/goloquent/db"
 
     // JSON equal
     users := new([]User)
@@ -650,4 +650,4 @@ The supported data type are :
 
 **$Key**, **$Deleted** are reserved words, please avoid to use these words as your column name
 
-[MIT License](https://github.com/si3nloong/goloquent/blob/master/LICENSE)
+[MIT License](https://github.com/Oskang09/goloquent/blob/master/LICENSE)

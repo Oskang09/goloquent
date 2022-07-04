@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"cloud.google.com/go/datastore"
-	"github.com/si3nloong/goloquent"
+	"github.com/Oskang09/goloquent"
 )
 
 // Connection :
@@ -32,13 +32,13 @@ func Connection(driver string) *goloquent.DB {
 }
 
 // Query :
-func Query(stmt string, args ...interface{}) (*sql.Rows, error) {
-	return defaultDB.Query(stmt, args...)
+func Query(ctx context.Context, stmt string, args ...interface{}) (*sql.Rows, error) {
+	return defaultDB.Query(ctx, stmt, args...)
 }
 
 // Exec :
-func Exec(stmt string, args ...interface{}) (sql.Result, error) {
-	return defaultDB.Exec(stmt, args...)
+func Exec(ctx context.Context, stmt string, args ...interface{}) (sql.Result, error) {
+	return defaultDB.Exec(ctx, stmt, args...)
 }
 
 // Table :
